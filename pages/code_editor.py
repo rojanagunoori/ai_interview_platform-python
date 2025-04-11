@@ -17,8 +17,8 @@ def run_code(code):
     except Exception:
         return traceback.format_exc()
 
-def main():
-    st.set_page_config(page_title="Local Python Compiler", layout="centered")
+def run():
+    #st.set_page_config(page_title="Local Python Compiler", layout="centered")
     st.title("🧠 Local Python Code Compiler")
     st.write("Type your Python code below and hit **Run** to see the output.")
 

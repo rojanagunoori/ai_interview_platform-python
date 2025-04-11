@@ -1,7 +1,6 @@
-# Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
-# Install system dependencies needed for PyAudio
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     portaudio19-dev \
     libasound-dev \
@@ -10,18 +9,16 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy requirements first to cache dependencies
+# Copy requirements and install Python dependencies
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Copy the current directory contents into the container at /app
+# Copy the rest of the application
 COPY . .
 
-# Run the application
-CMD ["python", "main.py"]
+# Set the command to run the application
+CMD ["streamlit", "run", "main.py"]

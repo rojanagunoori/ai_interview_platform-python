@@ -1,3 +1,26 @@
+# Streamlit & Web UI
 streamlit
+streamlit-mic-recorder
+
 pandas
 numpy
+
+# Google Gemini API
+google-generativeai
+google-api-core
+
+# Environment Variables
+python-dotenv
+
+# JSON & PDF Processing
+PyPDF2
+Pillow
+
+# Voice (Text-to-Speech & Recognition)
+gTTS
+pygame
+SpeechRecognition
+pyaudio
+
+# Other standard utilities
+requests

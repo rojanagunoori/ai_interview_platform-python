@@ -43,25 +43,12 @@ def run():
         image = Image.open("assets/interviewer.jpg")
         st.image(image, width=250, caption="AI Interviewer")
 
-        #question = ask_gemini(f"Ask a first {job_role} interview question.")
-        #st.markdown(f"**\U0001F464 Interviewer:** {question}")
-        #speak(question)
-
-        #st.markdown("\U0001F3A7 Listening to your answer...")
-        #try:
-            #user_answer = listen()
-            #st.success(f"\U0001F5E3️ You said: {user_answer}")
-            #st.session_state["transcript"] = user_answer
-        #except:
-            #st.error("⚠️ Could not capture your voice. Please try again.")
         
-        
-        #run_interview()
-        run_interview(role=job_role)
+        run_interview(role=job_role,resumetext=resume_text)
 
 
-        if st.button("❌ End Interview"):
-            st.session_state["interview_started"] = False
-            st.session_state.q_index = 0
-            st.session_state.transcripts = []
-            st.success("✅ Interview Ended. Please go to Evaluation or Report Card from the sidebar.")
+        #if st.button("❌ End Interview"):
+            #st.session_state["interview_started"] = False
+            #st.session_state.q_index = 0
+            #st.session_state.transcripts = []
+            #st.success("✅ Interview Ended. Please go to Evaluation or Report Card from the sidebar.")

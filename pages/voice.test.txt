@@ -1,0 +1,169 @@
+import tkinter as tk
+import pygame
+import threading
+import time
+import tempfile
+import os
+import pyaudio
+import wave
+import speech_recognition as sr
+from gtts import gTTS
+
+# Interview questions
+questions = [
+    "Tell me about yourself.",
+    "What are your strengths and weaknesses?",
+    "Why do you want this job?",
+    "Describe a challenge you've faced and how you handled it.",
+    "Where do you see yourself in five years?"
+]
+
+current_question_index = 0
+text_to_speak = questions[current_question_index]
+
+# Audio playback flags
+is_playing = False
+is_paused = False
+audio_file = None
+
+# Voice recording flags
+is_recording = False
+frames = []
+stream = None
+p = None
+
+# Initialize pygame mixer
+pygame.mixer.init()
+
+def generate_audio(text):
+    global audio_file
+    tts = gTTS(text)
+    fd, path = tempfile.mkstemp(suffix=".mp3")
+    os.close(fd)
+    tts.save(path)
+    audio_file = path
+
+def play_audio():
+    global is_playing, is_paused
+    if not is_playing:
+        pygame.mixer.music.load(audio_file)
+        pygame.mixer.music.play()
+        is_playing = True
+        is_paused = False
+        play_button.config(text="⏸ Pause")
+    elif is_paused:
+        pygame.mixer.music.unpause()
+        is_paused = False
+        play_button.config(text="⏸ Pause")
+    else:
+        pygame.mixer.music.pause()
+        is_paused = True
+        play_button.config(text="▶ Resume")
+
+def on_audio_end():
+    global is_playing, is_paused
+    while is_playing:
+        if not pygame.mixer.music.get_busy() and not is_paused:
+            is_playing = False
+            play_button.config(text="▶ Play")
+            break
+        time.sleep(0.1)
+
+def start_playback():
+    threading.Thread(target=play_audio).start()
+    threading.Thread(target=on_audio_end).start()
+
+def toggle_playback():
+    global audio_file
+    if not audio_file:
+        generate_audio(text_to_speak)
+    start_playback()
+
+def start_recording():
+    global is_recording, frames, stream, p
+    is_recording = True
+    frames = []
+
+    p = pyaudio.PyAudio()
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=1,
+                    rate=44100,
+                    input=True,
+                    frames_per_buffer=1024)
+
+    def record():
+        while is_recording:
+            data = stream.read(1024)
+            frames.append(data)
+        stop_and_save()
+
+    threading.Thread(target=record).start()
+
+def stop_and_save():
+    global stream, p, frames
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+    filename = "recorded_audio.wav"
+    wf = wave.open(filename, 'wb')
+    wf.setnchannels(1)
+    wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+    wf.setframerate(44100)
+    wf.writeframes(b''.join(frames))
+    wf.close()
+
+    # Transcription
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(filename) as source:
+        audio = recognizer.record(source)
+        try:
+            transcript = recognizer.recognize_google(audio)
+            result_label.config(text="📝 Transcript:\n" + transcript)
+        except sr.UnknownValueError:
+            result_label.config(text="⚠️ Could not understand audio.")
+        except sr.RequestError as e:
+            result_label.config(text=f"⚠️ API error: {e}")
+
+def toggle_recording():
+    global is_recording
+    if not is_recording:
+        is_recording = True
+        mic_button.config(text="⏹ Stop")
+        start_recording()
+    else:
+        is_recording = False
+        mic_button.config(text="🎙️ Mic")
+
+def next_question():
+    global current_question_index, text_to_speak, audio_file
+    if current_question_index < len(questions) - 1:
+        current_question_index += 1
+        text_to_speak = questions[current_question_index]
+        audio_file = None  # Reset audio file to regenerate for new question
+        question_label.config(text=f"❓ {text_to_speak}")
+        result_label.config(text="")  # Clear transcript
+        play_button.config(text="▶ Play")
+        mic_button.config(text="🎙️ Mic")
+
+# Tkinter UI
+root = tk.Tk()
+root.title("AI Interviewer")
+root.geometry("450x400")
+
+question_label = tk.Label(root, text=f"❓ {text_to_speak}", font=("Arial", 14), wraplength=400, justify="left")
+question_label.pack(pady=15)
+
+play_button = tk.Button(root, text="▶ Play", font=("Arial", 16), command=toggle_playback)
+play_button.pack(pady=10)
+
+mic_button = tk.Button(root, text="🎙️ Mic", font=("Arial", 16), command=toggle_recording)
+mic_button.pack(pady=10)
+
+result_label = tk.Label(root, text="", font=("Arial", 12), wraplength=400, justify="left")
+result_label.pack(pady=10)
+
+next_button = tk.Button(root, text="⏭️ Next Question", font=("Arial", 14), command=next_question)
+next_button.pack(pady=10)
+
+root.mainloop()

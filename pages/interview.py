@@ -1,140 +1,209 @@
 import streamlit as st
 import speech_recognition as sr
-import pyttsx3
-import queue
-import time
 
 import threading
-from utils.gemini_utils import get_questions, get_coding_problems,get_gemini_response
+from utils.gemini_utils import get_questions, get_coding_problems,get_gemini_response,get_interview_feedback
 from utils.voice_utils import speak, listen, stop_speaking
 
 import tkinter as tk
+import time
+
+import wave
+import pyaudio
 
 from gtts import gTTS
 import pygame
 import os
 import tempfile
+from streamlit_mic_recorder import mic_recorder
 
-# Simulate AI questions
-QUESTIONS = [
-    "Tell me about yourself",
-    "What are your strengths and weaknesses?",
-    "Describe a recent project you've worked on",
-]
 
-transcripts = []
-#speech_queue = queue.Queue()
-#engine = pyttsx3.init()
 
-speech_queue = queue.Queue()
-is_speaking_event = threading.Event()
-last_spoken_time = 0
+# Audio transcription
+def transcribe_audio(audio_bytes):
+    recognizer = sr.Recognizer()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+        temp_audio.write(audio_bytes)
+        temp_audio_path = temp_audio.name
+    with sr.AudioFile(temp_audio_path) as source:
+        audio = recognizer.record(source)
+    try:
+        transcript = recognizer.recognize_google(audio)
+    except sr.UnknownValueError:
+        transcript = "⚠️ Could not understand audio."
+    except sr.RequestError as e:
+        transcript = f"⚠️ API error: {e}"
+    os.remove(temp_audio_path)
+    return transcript
 
-if "is_speaking" not in st.session_state:
-    st.session_state.is_speaking = False
-
-pygame.mixer.init()
-audio_file = None
-is_paused = False
-
-def speak(text):
-    #global audio_file, is_paused
-    
-    print("Speaking:", text)  # ✅ Check if it prints
-
+# Text to audio file
+def generate_audio(text):
     tts = gTTS(text)
     fd, path = tempfile.mkstemp(suffix=".mp3")
     os.close(fd)
     tts.save(path)
-    audio_file = path
-    print("Saved MP3 at:", path)  # ✅ Ensure it's saved
+    return path
 
-    def play():
-        #global is_paused
-        pygame.mixer.music.load(audio_file)
-        pygame.mixer.music.play()
-        st.session_state.is_playing = True
-        st.session_state.is_paused = False
-        print("🎵 Playing audio...")  # ✅
-
-
-    threading.Thread(target=play).start()
-
-
-def pause_or_resume_audio():
-    if pygame.mixer.music.get_busy():
-        if st.session_state.is_paused:
-            pygame.mixer.music.unpause()
-            st.session_state.is_paused = False
-            st.session_state.is_playing = True
-        else:
-            pygame.mixer.music.pause()
-            st.session_state.is_paused = True
-            st.session_state.is_playing = False
-
-
-
-def pause_or_resume_audio1():
-    global is_paused
-    if pygame.mixer.music.get_busy():
-        if is_paused:
-            pygame.mixer.music.unpause()
-            is_paused = False
-        else:
-            pygame.mixer.music.pause()
-            is_paused = True
-
-def stop_speaking():
-    pygame.mixer.music.stop()
-
-
-
-def speech_worker():
-    engine = pyttsx3.init()
-    while True:
-        text = speech_queue.get()
-        if text is None:
-            break
-        print("Speak called:", text)
-        try:
-            #local_engine = pyttsx3.init()
-            engine.say(text)
-            engine.runAndWait()
-        except Exception as e:
-            print("Speech Error:", e)
-        #st.session_state.is_speaking = False
-        #is_speaking_event.clear()
-        speech_queue.task_done()
-if "speech_thread_started" not in st.session_state:
-    threading.Thread(target=speech_worker, daemon=True).start()
-    st.session_state.speech_thread_started = True
+# Reset interview state
+def reset_interview(role, resumetext):
+    st.session_state.current_question_index = 0
+    st.session_state.responses = []
+    #st.session_state.questions = []
+    st.session_state.audio_file = None
+    st.session_state.chat_history = []
     
-    
-def speak2(text):
-    global last_spoken_time
-    now = time.time()
-    if now - last_spoken_time > 1:  # 2 seconds between speeches
-        last_spoken_time = now
-        #print("🎙️ [DEBUG] speak() triggered for:", text)
-        if text not in list(speech_queue.queue):
-            print("🎙️ [DEBUG] speak() triggered for:", text)
-            speech_queue.put(text)
+    # Get fresh Gemini questions
+    #st.session_state.questions = get_questions(role, resumetext)
+    #if isinstance(st.session_state.questions, str):  # In case it's a raw JSON string
+        #import json
+        #st.session_state.questions = json.loads(st.session_state.questions)
 
-        #speech_queue.put(text)
-    #if not is_speaking_event.is_set():#st.session_state.is_speaking:
-        #st.session_state.is_speaking = True
-        #is_speaking_event.set()
-        #speech_queue.put(text)
-# Start the speech thread once
-   
+    #st.success("🔄 Interview reset! Fresh questions loaded.")
     
-def speak1(text):
-    def _speak(t):
-        engine = pyttsx3.init()
-        engine.say(t)
-        engine.runAndWait()
-    #threading.Thread(target=_speak).start()
-    threading.Thread(target=_speak, args=(text,), daemon=True).start()
+if 'last_audio_index' not in st.session_state:
+    st.session_state.last_audio_index = -1
+
+
+def reset_interview(role, resumetext):
+    st.session_state.questions = get_questions(role, resumetext, num_questions=5)
+    st.session_state.current_question_index = 0
+    st.session_state.responses = []
+    st.session_state.chat_history = []
+    st.session_state.audio_file = None
+
+def run_interview(role, resumetext):
+    st.title("🎤 AI Interviewer")
+
+    if 'questions' not in st.session_state or not st.session_state.questions:
+        reset_interview(role, resumetext)
+
+    index = st.session_state.current_question_index
+    questions = st.session_state.questions
+
+    if index < len(questions):
+        current_question = questions[index]['question']
+        
+        # ✅ Automatically generate audio when question index changes
+        if st.session_state.get("last_audio_index") != index:
+            st.session_state.audio_file = generate_audio(current_question)
+            st.session_state.last_audio_index = index
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("### ❓ Question")
+            st.markdown(f"**{current_question}**")
+
+            if st.session_state.audio_file is None:
+                st.session_state.audio_file = generate_audio(current_question)
+                st.session_state.audio_autoplay = True
+
+            if st.session_state.audio_file:
+                audio_bytes = open(st.session_state.audio_file, 'rb').read()
+                st.audio(audio_bytes, format='audio/mp3')
+
+            st.markdown("### 🎤 Your Response")
+            audio = mic_recorder(
+                start_prompt="Start Recording",
+                stop_prompt="Stop Recording",
+                just_once=True,
+                format="wav"
+            )
+
+            if audio and audio['bytes']:
+                transcript = transcribe_audio(audio['bytes'])
+                st.session_state.responses.append(transcript)
+                st.session_state.chat_history.append({
+                    "question": current_question,
+                    "answer": transcript
+                })
+                st.session_state.current_question_index += 1
+                st.session_state.audio_file = None
+                st.rerun()
+        
+            if st.button("❌ End Interview"):
+                st.session_state.current_question_index = len(questions)
+                st.rerun()
+
+        with col2:
+            st.markdown("### 💬 Interview Chat")
+            for i, chat in enumerate(st.session_state.chat_history):
+                with st.chat_message("🤖 AI"):
+                    st.markdown(f"**Q{i+1}:** {chat['question']}")
+                with st.chat_message("👤 You"):
+                    st.markdown(f"**A{i+1}:** {chat['answer']}")
+
+    else:
+        st.success("✅ Interview Completed!")
+        st.markdown("## 📝 Interview Summary")
+
+        for i, q in enumerate(st.session_state.questions):
+            st.markdown(f"**Q{i+1}: {q['question']}**")
+            st.markdown(f"**Answer:** {st.session_state.responses[i] if i < len(st.session_state.responses) else 'No response'}")
+
+        
+        #feedback = get_interview_feedback(st.session_state.questions, st.session_state.responses)
+        # Pad missing responses with "No response"
+        answers = st.session_state.responses + ["No response"] * (len(st.session_state.questions) - len(st.session_state.responses))
+        feedback = get_interview_feedback(st.session_state.questions, answers)
+
+
+        st.markdown("### 💡 Feedback")
+        st.markdown(f"**🧠 Score:** {feedback['score']} / 10")
+        st.markdown(f"**📝 Summary:** {feedback['summary']}")
+        st.markdown(f"**🔧 Areas to Improve:** {feedback['improvement']}")
+
+        if st.button("🔁 Start Again"):
+            reset_interview(role, resumetext)
+            st.rerun()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def run_interview1(role,resumetext):
+    st.title("🎤 AI Interviewer")
+
+    
+
+       
+def give_feedback():
+    all_answers = "\n".join(st.session_state.answers)
+    prompt = f"""Based on the following interview answers, give professional feedback with strengths and suggestions for improvement:
+
+{all_answers}
+"""
+    feedback = get_gemini_response(prompt)
+    st.subheader("📝 AI Feedback:")
+    st.write(feedback)
+        
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -162,6 +231,12 @@ def run():
     if "q_index" not in st.session_state:
         st.session_state.q_index = 0
         st.session_state.transcripts = []
+        # Simulate AI questions
+        QUESTIONS = [
+         "Tell me about yourself",
+    "What are your strengths and weaknesses?",
+    "Describe a recent project you've worked on",
+        ]
 
     if st.session_state.q_index < len(QUESTIONS):
         question = QUESTIONS[st.session_state.q_index]
@@ -186,402 +261,3 @@ def run():
         st.success("Interview Done! View Evaluation & Report Card")
         st.session_state.q_index = 0
    
-
-
-def run_interview(role):
-    st.title("🎙️ AI Voice Interview")
-
-    if "questions" not in st.session_state:
-        st.session_state.questions = []
-    if "answers" not in st.session_state:
-        st.session_state.answers = []
-    if "current_question" not in st.session_state:
-        st.session_state.current_question = "Tell me about yourself."
-    if "last_response" not in st.session_state:
-        st.session_state.last_response = ""
-    if "awaiting_next" not in st.session_state:
-        st.session_state.awaiting_next = False
-
-    question = st.session_state.current_question
-    
-    
-    if "is_playing" not in st.session_state:
-        st.session_state.is_playing = False
-    if "is_paused" not in st.session_state:
-        st.session_state.is_paused = False
-
-    # Layout for displaying question and answer
-    col1, col2 = st.columns(2)
-    
-    
-    with col1:
-        st.markdown("### 🧑 Your Response:")
-        st.write(f"**{question}**")
-        
-        # Check if audio naturally finished
-        #if not pygame.mixer.music.get_busy() and st.session_state.is_playing:
-            #st.session_state.is_playing = False
-            #st.session_state.is_paused = False
-        if not pygame.mixer.music.get_busy():
-            # Not playing anything, start fresh
-            speak(question)
-        elif st.session_state.is_paused:
-            # Resume if paused
-            pause_or_resume_audio()
-        else:
-            # Pause if currently playing
-            pause_or_resume_audio()
-        if not pygame.mixer.music.get_busy() and st.session_state.is_playing:
-            st.session_state.is_playing = False
-            st.session_state.is_paused = False
-
-        
-        
-            
-        if st.button("▶️ Play Question" if not st.session_state.is_playing else "⏸️ Pause Question", key="toggle_audio_btn"):#st.button("▶️ Play / ⏸️ Pause Question"):#st.button("▶️ Play Question" if not st.session_state.is_playing else "⏸️ Pause/Resume"):
-            if not pygame.mixer.music.get_busy():#st.session_state.is_playing:
-                # Audio has stopped, replay from beginning
-                stop_speaking()  # Just to be safe
-                speak(question)
-                st.session_state.is_playing = True
-                st.session_state.is_paused = False
-                # If playback finished or paused → play or resume
-                #if st.session_state.is_paused:#pygame.mixer.music.get_pos() > 0:
-                    #pause_or_resume_audio()  # Resume if paused
-                #else:
-                    #speak( "Hello! This is a test voice with real pause and resume support using pygame.")
-                    #speak(question)  # Play from start
-                #st.session_state.is_playing = True
-            else:
-                pause_or_resume_audio()  # Pause
-                #st.session_state.is_playing = False
-                st.session_state.is_playing = not st.session_state.is_paused
-                #stop_speaking()
-                #st.session_state.is_playing = False
-                #speak(question)
-                #st.session_state.is_playing = True
-            #else:
-                #pause_or_resume_audio()
-                #speak(question)
-                #st.session_state.is_playing = True
-        #if st.button("⏹️ Stop Question"):
-            #stop_speaking()
-            #st.session_state.is_playing = False
-        #if st.button("🎧 Listen Again"):
-            #stop_speaking()
-            #speak(question)
-            #st.session_state.is_playing = True
-
-        #if st.button("🎤 Record Answer"):
-            #user_response = listen()
-            #if user_response:
-                #st.session_state.last_response = user_response
-                #st.session_state.awaiting_next = True
-
-        #if st.session_state.last_response:
-           # st.markdown(f"**{st.session_state.last_response}**")
-
-    with col2:
-        st.markdown("### 🤖 Interviewer:")
-        if st.button("🎤 Listen (Record Answer)"):
-            user_response = listen()
-            if user_response:
-                st.session_state.last_response = user_response
-                st.session_state.awaiting_next = True
-
-        if st.button("❌ Cancel Listening"):
-            st.warning("Listening canceled.")  # Placeholder (stop mic not straightforward)
-
-        if st.session_state.last_response:
-            st.markdown(f"**You said:** {st.session_state.last_response}")
-        #st.markdown(f"**{question}**")
-        #if st.button("🔊 Speak Question", key=f"speak_{len(st.session_state.questions)}"):
-        #if st.button("🔊 Speak Question", key="speak_button"):
-        #if st.button("🔊 Speak Question", key=f"btn_speak_{len(st.session_state.questions)}"):
-        #if st.button("🔊 Speak Question"):
-            #speak(question)
-            #st.session_state.trigger_speak = True
-    # Speak only once when triggered
-    #if st.session_state.get("trigger_speak", False):
-        #print("✅ Triggering speak() once for question")
-        #speak(question)
-        #st.session_state.trigger_speak = False        
-
-    
-
-    # Show "Next Question" only after recording
-    if st.session_state.awaiting_next:
-        if st.button("➡️ Next Question"):
-            st.session_state.answers.append(st.session_state.last_response)
-            st.session_state.questions.append(question)
-
-            # Build chat history
-            chat_history = ""
-            for q, a in zip(st.session_state.questions, st.session_state.answers):
-                chat_history += f"Interviewer: {q}\nYou: {a}\n"
-            chat_history += f"You: {st.session_state.last_response}\n"
-
-            next_question = get_gemini_response(chat_history)
-            st.session_state.current_question = next_question
-            st.session_state.last_response = ""
-            st.session_state.awaiting_next = False
-            st.session_state.is_playing = False  # 🆕 reset audio play state
-            st.session_state.is_paused = False
-            stop_speaking()
-
-
-def run_interviewb(role):
-    st.title("🎙️ AI Voice Interview")
-
-    if "questions" not in st.session_state:
-        st.session_state.questions = []
-    if "answers" not in st.session_state:
-        st.session_state.answers = []
-    if "current_question" not in st.session_state:
-        st.session_state.current_question = "Tell me about yourself."
-
-    question = st.session_state.current_question
-
-    # Layout for displaying question and answer
-    col1, col2 = st.columns(2)
-
-    with col2:
-        st.markdown("### 🤖 Interviewer:")
-        st.markdown(f"**{question}**")
-        if st.button("🔊 Speak Question"):
-            speak(question)
-
-    with col1:
-        st.markdown("### 🧑 Your Response:")
-        if st.button("🎤 Record Answer"):
-            user_response = listen()
-            if user_response:
-                st.markdown(f"**{user_response}**")
-                st.session_state.answers.append(user_response)
-                st.session_state.questions.append(question)
-
-                # Get next question from Gemini
-                chat_history = ""
-                for q, a in zip(st.session_state.questions, st.session_state.answers):
-                    chat_history += f"Interviewer: {q}\nYou: {a}\n"
-                chat_history += f"You: {user_response}\n"
-
-                next_question = get_gemini_response(chat_history)
-                st.session_state.current_question = next_question
-                st.session_state.last_response = ""
-                st.session_state.awaiting_next = False
-
-def run_interviewa(role):
-    st.title("🎙️ AI Voice Interview")
-
-    if 'qa_pairs' not in st.session_state:
-        st.session_state.qa_pairs = get_questions(role)
-        st.session_state.current_question_index = 0
-        st.session_state.feedback = ""
-        st.session_state.finished = False
-
-    # If question list is empty
-    if not st.session_state.qa_pairs:
-        st.error("No questions found. Please try again or check your Gemini API response.")
-        return
-
-    current_index = st.session_state.current_question_index
-
-    # Make sure index is within bounds
-    if current_index >= len(st.session_state.qa_pairs):
-        st.success("✅ Interview completed! Great job!")
-        return
-
-    current_qa = st.session_state.qa_pairs[current_index]
-    question = current_qa.get("question", "No question")
-    correct_answer = current_qa.get("answer", "No answer")
-
-    st.subheader(f"Question {current_index + 1}:")
-    st.write(question)
-
-    user_answer = st.text_input("Your Answer", key=f"answer_{current_index}")
-
-    if st.button("Submit"):
-        if user_answer.strip().lower() in correct_answer.lower():
-            st.success("✅ Correct!")
-        else:
-            st.error(f"❌ Incorrect. Correct answer: {correct_answer}")
-
-        # Move to next question
-        st.session_state.current_question_index += 1
-        #st.experimental_rerun()
-        st.rerun()
-
-
-
-def run_interview2(role):
-    st.title("AI Interview")
-    
-    if "qa_pairs" not in st.session_state:
-        st.session_state.qa_pairs = get_questions(role)
-        st.session_state.q_index = 0
-        st.session_state.feedback = ""
-        st.session_state.finished = False
-    
-    # If question list is empty
-    if not st.session_state.qa_pairs:
-        st.error("No questions found. Please try again or check your Gemini API response.")
-        return
-
-    if st.session_state.finished:
-        st.success("✅ Interview completed!")
-        return
-
-    current_qa = st.session_state.qa_pairs[st.session_state.q_index]
-    st.subheader(f"Question {st.session_state.q_index + 1}: {current_qa['question']}")
-
-    user_answer = st.text_area("Your Answer:", key=f"answer_{st.session_state.q_index}")
-
-    if st.button("Submit Answer"):
-        correct_answer = current_qa['answer'].strip().lower()
-        user_response = user_answer.strip().lower()
-
-        if user_response in correct_answer or correct_answer in user_response:
-            st.session_state.feedback = "✅ Correct! Here's your next question."
-        else:
-            st.session_state.feedback = f"❌ Incorrect. Correct answer: {current_qa['answer']}"
-
-        st.session_state.q_index += 1
-
-        if st.session_state.q_index >= len(st.session_state.qa_pairs):
-            st.session_state.finished = True
-
-    if st.session_state.feedback:
-        st.info(st.session_state.feedback)            
-                     
-        
-def run_interview1():
-    st.subheader("🧠 Voice Q&A Interview")
-
-    if "q_index" not in st.session_state:
-        st.session_state.q_index = 0
-        st.session_state.transcripts = []
-
-    if st.session_state.q_index < len(QUESTIONS):
-        question = QUESTIONS[st.session_state.q_index]
-        st.write(f"**Question {st.session_state.q_index + 1}:** {question}")
-
-        if st.button("🔊 Ask Question (Voice)"):
-            speak(question)
-        
-        record_button = st.button("🎤 Record Answer")
-        status_placeholder = st.empty()
-
-        if record_button:
-            #r = sr.Recognizer()
-            #with sr.Microphone() as source:
-                #st.info("🎙️ Listening... Please speak clearly")
-                #audio = r.listen(source)
-            try:
-                status_placeholder.info("🎙️ Listening... Please speak clearly.")
-                # Wait up to 5 sec for speech, then record up to 10 sec max
-                #audio = r.listen(source, timeout=5, phrase_time_limit=10)
-                #text = r.recognize_google(audio)
-                #text = listen()
-                text = listen(timeout=5, phrase_time_limit=10)
-                st.success(f"🗣️ You said: {text}")
-                st.session_state.transcripts.append((question, text))
-                st.session_state.q_index += 1
-            except sr.WaitTimeoutError:
-                st.warning("⏰ No speech detected. Please try again.")
-            except sr.UnknownValueError:
-                st.error("❌ Could not understand what you said.")
-            except sr.RequestError as e:
-                st.error(f"🌐 Could not connect to the recognition service: {e}")
-            except Exception as e:
-                st.error(f"⚠️ Unexpected error: {str(e)}")
-    else:
-        st.success("🎉 Interview Complete! Check Evaluation tab.")
-        if st.button("🔁 Restart"):
-            st.session_state.q_index = 0
-            st.session_state.transcripts = []
-
-
-# Initialize the engine only once
-#engine = pyttsx3.init()
-
-#def speak_text():
-    #ext = "Hello! You clicked the button."
-    #engine.stop()  # Stops any current speech before starting new
-    #engine.say(text)
-    #engine.runAndWait()
-
-# GUI using tkinter
-#root = tk.Tk()
-#root.title("Voice Button")
-
-#speak_button = tk.Button(root, text="Speak", command=speak_text)
-#speak_button.pack(pady=20)
-
-#root.mainloop()
-
-#####new one
-# Global flags
-#is_playing = False
-#is_paused = False
-#audio_file = None
-
-# Initialize pygame mixer
-#pygame.mixer.init()
-
-#def generate_audio(text):
-    #global audio_file
-    #tts = gTTS(text)
-    #fd, path = tempfile.mkstemp(suffix=".mp3")
-    #os.close(fd)
-    #tts.save(path)
-    #audio_file = path
-
-#def play_audio():
-    #global is_playing, is_paused
-    #if not is_playing:
-        #pygame.mixer.music.load(audio_file)
-        #pygame.mixer.music.play()
-        #is_playing = True
-        #is_paused = False
-        #update_button("Pause")
-    #elif is_paused:
-        #pygame.mixer.music.unpause()
-        is_paused = False
-        #update_button("Pause")
-    #else:
-       # pygame.mixer.music.pause()
-       # is_paused = True
-        #update_button("Resume")
-
-#def on_audio_end():
-    #global is_playing, is_paused
-    #while is_playing:
-       # if not pygame.mixer.music.get_busy() and not is_paused:
-            #is_playing = False
-            #update_button("Play")
-           # break
-
-#def start_playback():
-    #threading.Thread(target=play_audio).start()
-    #threading.Thread(target=on_audio_end).start()
-
-#def toggle():
-    #if not audio_file:
-       # generate_audio(text_to_speak)
-   # start_playback()
-
-#def update_button(text):
-   # btn.config(text=text)
-
-# UI Setup
-#text_to_speak = "Hello! This is a test voice with real pause and resume support using pygame."
-
-#root = tk.Tk()
-#root.title("Advanced Voice Player")
-#root.geometry("400x200")
-
-#btn = tk.Button(root, text="Play", font=("Arial", 18), command=toggle)
-#btn.pack(pady=60)
-
-#root.mainloop()

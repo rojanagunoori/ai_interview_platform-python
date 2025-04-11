@@ -1,11 +1,21 @@
-FROM python:3.11-slim
+FROM python:3.11
 
-RUN apt-get update && apt-get install -y portaudio19-dev gcc
+# Install system dependencies including PortAudio
+RUN apt-get update && apt-get install -y \
+    portaudio19-dev \
+    libffi-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
+# Set working directory
 WORKDIR /app
-COPY . /app
 
+# Copy code
+COPY . .
+
+# Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-CMD ["python", "your_script.py"]
+# Start the app
+CMD ["python", "main.py"]

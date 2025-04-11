@@ -22,5 +22,8 @@ pygame
 SpeechRecognition
 pyaudio
 
+# GUI Utilities
+tk
+
 # Other standard utilities
 requests

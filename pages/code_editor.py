@@ -1,6 +1,46 @@
 import streamlit as st
 import requests
 
+
+
+
+import contextlib
+import io
+import traceback
+
+def run_code(code):
+    output_buffer = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(output_buffer):
+            exec(code, {})
+        return output_buffer.getvalue()
+    except Exception:
+        return traceback.format_exc()
+
+def main():
+    st.set_page_config(page_title="Local Python Compiler", layout="centered")
+    st.title("🧠 Local Python Code Compiler")
+    st.write("Type your Python code below and hit **Run** to see the output.")
+
+    code = st.text_area("📝 Enter Python Code:", height=250, placeholder="print('Hello, world!')")
+
+    if st.button("▶️ Run Code"):
+        if code.strip() == "":
+            st.warning("Please enter some code.")
+        else:
+            output = run_code(code)
+            if output.strip():
+                st.code(output, language='python')
+            else:
+                st.success("✅ Code ran successfully. No output returned.")
+
+
+
+
+
+
+
+
 LANGUAGES = {"Python": 71, "C++": 54, "Java": 62}
 JUDGE0_URL = "https://judge0-ce.p.rapidapi.com/submissions"
 
@@ -10,7 +50,7 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-def run():
+def run1():
     st.title("Code Editor")
     st.write("AI Challenge: Write a function to reverse a string")
 

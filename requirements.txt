@@ -20,8 +20,8 @@ Pillow
 gTTS
 pygame
 SpeechRecognition
-#pyaudio
-PyAudio
+pyaudio
+#PyAudio
 
 # GUI Utilities
 tk

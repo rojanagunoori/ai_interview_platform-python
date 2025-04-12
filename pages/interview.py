@@ -1,18 +1,18 @@
 import streamlit as st
 import speech_recognition as sr
 
-import threading
+#import threading
 from utils.gemini_utils import get_questions, get_coding_problems,get_gemini_response,get_interview_feedback
 from utils.voice_utils import speak, listen, stop_speaking
 
-import tkinter as tk
-import time
+#import tkinter as tk
+#import time
 
-import wave
-import pyaudio
+#import wave
+#import pyaudio
 
 from gtts import gTTS
-import pygame
+#import pygame
 import os
 import tempfile
 from streamlit_mic_recorder import mic_recorder

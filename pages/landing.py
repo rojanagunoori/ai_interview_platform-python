@@ -3,8 +3,8 @@ import streamlit as st
 from PyPDF2 import PdfReader
 import tempfile
 from PIL import Image
-from utils.gemini_utils import ask_gemini
-from utils.voice_utils import speak, listen
+#from utils.gemini_utils import ask_gemini
+#from utils.voice_utils import speak, listen
 
 # 👇 Import the run_interview function from interview.py
 from pages.interview import run_interview

@@ -2,11 +2,14 @@ from gtts import gTTS
 import pygame
 import tempfile
 import time
+import os
 import threading
 import speech_recognition as sr
 
 # Initialize pygame mixer
-pygame.mixer.init()
+if os.environ.get("RENDER") is None:
+    pygame.mixer.init()
+#pygame.mixer.init()
 stop_playback = False
 
 def speak(text):

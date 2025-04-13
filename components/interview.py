@@ -14,7 +14,7 @@ import uuid
 #import wave
 #import pyaudio
 
-from gtts import gTTS
+from gtts import gTTS, gTTSError
 #import pygame
 import os
 import tempfile
@@ -41,10 +41,23 @@ def transcribe_audio(audio_bytes):
 
 # Text to audio file
 def generate_audio(text):
-    tts = gTTS(text)
-    fd, path = tempfile.mkstemp(suffix=".mp3")
-    os.close(fd)
-    tts.save(path)
+    #tts = gTTS(text)
+    #fd, path = tempfile.mkstemp(suffix=".mp3")
+    #os.close(fd)
+    #tts.save(path)
+    #return path
+    path = f"audio_cache/{hash(text)}.mp3"
+    if not os.path.exists("audio_cache"):
+        os.makedirs("audio_cache")
+    
+    if not os.path.exists(path):
+        try:
+            tts = gTTS(text)
+            tts.save(path)
+        except gTTSError:
+            st.warning("Too many TTS requests. Try again later.")
+            return None
+
     return path
 
 

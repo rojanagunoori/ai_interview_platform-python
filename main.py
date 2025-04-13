@@ -2,8 +2,10 @@ import streamlit as st
 from components import code_editor, landing, interview
 from components import landing
 
+st.set_page_config(page_title="AI Interview Platform", layout="wide", initial_sidebar_state="collapsed")
+
 def main():
-    st.set_page_config(page_title="AI Interview Platform", layout="wide", initial_sidebar_state="collapsed")
+    
     
     # 👇 Hide Streamlit's default elements
     hide_streamlit_style = """

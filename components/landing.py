@@ -11,6 +11,64 @@ import uuid
 # 👇 Import the run_interview function from interview.py
 from components.interview import run_interview
 
+st.markdown("""
+    <style>
+        body {
+            background-color: #fdf6f6; /* soft light maroon background */
+        }
+
+        .stApp {
+            background-color: #fbecec;
+            color: #4b1c1c;
+        }
+
+        /* Style titles and headers */
+        h1, h2, h3 {
+            color: #800000 !important;  /* dark maroon */
+        }
+
+        /* Style selectbox and file uploader */
+        .stSelectbox label, .stFileUploader label {
+            font-weight: bold;
+            color: #800000;
+        }
+
+        /* Button styles */
+        button[kind="primary"] {
+            background-color: #800000;
+            color: white;
+            border: none;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 0.6em 1.2em;
+        }
+
+        button[kind="primary"]:hover {
+            background-color: #a52a2a;
+            transform: scale(1.03);
+            box-shadow: 0 0 10px #a52a2a88;
+        }
+
+        /* Style text area */
+        textarea {
+            border: 2px solid #a52a2a;
+            border-radius: 5px;
+            background-color: #fff8f8;
+            color: #4b1c1c;
+        }
+
+        /* Animate section transitions */
+        .stMarkdown, .stFileUploader, .stSelectbox, .stButton {
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 
 def parse_resume(resume_file):
     reader = PdfReader(resume_file)
@@ -19,6 +77,7 @@ def parse_resume(resume_file):
 
 def landing_page():
     st.title("\U0001F3AF AI Interview - Landing Page")
+    st.markdown("""...CSS from above...""", unsafe_allow_html=True)
 
     st.subheader("\U0001F454 Choose Role & Upload Resume (optional)")
     # Initialize `page_number` if it doesn't exist

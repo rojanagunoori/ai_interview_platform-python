@@ -81,6 +81,38 @@ def reset_interview(role, resumetext):
 
 
 def run_interview(role, resumetext):
+    st.markdown("""
+    <style>
+    /* Target Streamlit selectbox */
+    div[data-baseweb="select"] {
+        background-color: #f0f8ff; /* Light blue background */
+        border-radius: 10px;
+        padding: 5px;
+    }
+
+    div[data-baseweb="select"] > div {
+        color: #333; /* Text color */
+    }
+
+    div[data-baseweb="select"] > div > div {
+        background-color: #ffffff; /* Dropdown background */
+    }
+
+    div[data-baseweb="select"] span {
+        color: #000080 !important;  /* Selected option text */
+        font-weight: bold;
+    }
+      .chat-container {
+        max-height: 100vh;
+        overflow-y: auto;
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        background-color: #f9f9f9;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
     st.title("🎤 AI Interviewer")
     
 
@@ -145,6 +177,13 @@ def run_interview(role, resumetext):
 
         with col2:
             st.markdown("### 💬 Interview Chat")
+            
+            chat_html = """
+            <div style='max-height: 100vh; overflow-y: auto; padding: 1rem; border: 1px solid #ddd;
+                border-radius: 10px; background-color: #f9f9f9;'>
+            """
+            st.markdown(chat_html, unsafe_allow_html=True)
+            
             for i, chat in enumerate(st.session_state.chat_history):
                 with st.chat_message("🤖 AI"):
                     st.markdown(f"**Q{i+1}:** {chat['question']}")
@@ -332,7 +371,7 @@ def show_css_loader(text="Loading..."):
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 200px;
+            min-height: 100vh;
         }}
         .loader {{
             border: 8px solid #f3f3f3;
@@ -346,10 +385,16 @@ def show_css_loader(text="Loading..."):
             0% {{ transform: rotate(0deg); }}
             100% {{ transform: rotate(360deg); }}
         }}
+        .loader-text {{
+            margin-top: 15px;
+            font-weight: bold;
+            color: maroon;
+            font-size: 1.2em;
+        }}
         </style>
         <div class="loader-container">
             <div class="loader"></div>
-            <p style="margin-top: 15px; font-weight: bold;">{text}</p>
+            <p class="loader-text" style="margin-top: 15px; font-weight: bold;">{text}</p>
         </div>
         """,
         unsafe_allow_html=True

@@ -11,7 +11,7 @@ import uuid
 # 👇 Import the run_interview function from interview.py
 from components.interview import run_interview
 
-st.markdown("""
+STYLE_CSS ="""
     <style>
         body {
             background-color: #fdf6f6; /* soft light maroon background */
@@ -32,6 +32,27 @@ st.markdown("""
             font-weight: bold;
             color: #800000;
         }
+        
+        * Selectbox input area (selected value) */
+    div[data-baseweb="select"] {
+        background-color: #fff8f8;
+        border: 2px solid #a52a2a;
+        border-radius: 8px;
+        color: #4b1c1c;
+    }
+
+    /* Dropdown options */
+    div[data-baseweb="popover"] {
+        background-color: #fff8f8;
+        border: 1px solid #800000;
+        color: #4b1c1c;
+    }
+
+    /* Individual options hover effect */
+    div[data-baseweb="popover"] div[role="option"]:hover {
+        background-color: #fcdcdc;
+        color: #800000;
+    }
 
         /* Button styles */
         button[kind="primary"] {
@@ -67,7 +88,7 @@ st.markdown("""
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
-""", unsafe_allow_html=True)
+"""
 
 
 def parse_resume(resume_file):
@@ -77,7 +98,7 @@ def parse_resume(resume_file):
 
 def landing_page():
     st.title("\U0001F3AF AI Interview - Landing Page")
-    st.markdown("""...CSS from above...""", unsafe_allow_html=True)
+    st.markdown(STYLE_CSS, unsafe_allow_html=True)
 
     st.subheader("\U0001F454 Choose Role & Upload Resume (optional)")
     # Initialize `page_number` if it doesn't exist

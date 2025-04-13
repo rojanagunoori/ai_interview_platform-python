@@ -4,7 +4,89 @@ from components import landing
 
 st.set_page_config(page_title="AI Interview Platform", layout="wide", initial_sidebar_state="collapsed")
 
+
+STYLE_CSS ="""
+    <style>
+        body {
+            background-color: #fdf6f6; /* soft light maroon background */
+        }
+
+        .stApp {
+            background-color: #fbecec;
+            color: #4b1c1c;
+        }
+
+        /* Style titles and headers */
+        h1, h2, h3 {
+            color: #800000 !important;  /* dark maroon */
+        }
+
+        /* Style selectbox and file uploader */
+        .stSelectbox label, .stFileUploader label {
+            font-weight: bold;
+            color: #800000;
+        }
+        
+        * Selectbox input area (selected value) */
+    div[data-baseweb="select"] {
+        background-color: #fff8f8;
+        border: 2px solid #a52a2a;
+        border-radius: 8px;
+        color: #4b1c1c;
+    }
+
+    /* Dropdown options */
+    div[data-baseweb="popover"] {
+        background-color: #fff8f8;
+        border: 1px solid #800000;
+        color: #4b1c1c;
+    }
+
+    /* Individual options hover effect */
+    div[data-baseweb="popover"] div[role="option"]:hover {
+        background-color: #fcdcdc;
+        color: #800000;
+    }
+
+        /* Button styles */
+        button[kind="primary"] {
+            background-color: #800000;
+            color: white;
+            border: none;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 0.6em 1.2em;
+        }
+
+        button[kind="primary"]:hover {
+            background-color: #a52a2a;
+            transform: scale(1.03);
+            box-shadow: 0 0 10px #a52a2a88;
+        }
+
+        /* Style text area */
+        textarea {
+            border: 2px solid #a52a2a;
+            border-radius: 5px;
+            background-color: #fff8f8;
+            color: #4b1c1c;
+        }
+
+        /* Animate section transitions */
+        .stMarkdown, .stFileUploader, .stSelectbox, .stButton {
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+"""
+
+
 def main():
+    st.markdown(STYLE_CSS, unsafe_allow_html=True)
     
     
     # 👇 Hide Streamlit's default elements

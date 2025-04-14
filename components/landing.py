@@ -105,9 +105,20 @@ def landing_page():
     if "page_number" not in st.session_state:
         st.session_state.page_number = 0  # or any default value you prefer
     
-    unique_key = f"job_role_{uuid.uuid4()}"
-    job_role = st.selectbox("Role:", ["Frontend", "Backend", "Full Stack","React Developer","Nodejs Develoer", "ML Engineer", "Software Engineer"], key=f"job_role_{unique_key}"   )
-    resume_file = st.file_uploader("Upload Resume (PDF)", type=['pdf'], key=f"resume_uploader_{unique_key}")
+    #unique_key = f"job_role_{uuid.uuid4()}"
+    #job_role = st.selectbox("Role:", ["Frontend", "Backend", "Full Stack","React Developer","Nodejs Develoer", "ML Engineer", "Software Engineer"], key=f"job_role_{unique_key}"   )
+    #resume_file = st.file_uploader("Upload Resume (PDF)", type=['pdf'], key=f"resume_uploader_{unique_key}")
+    
+    # Set unique keys only once per session
+    if "unique_key" not in st.session_state:
+        st.session_state["unique_key"] = str(uuid.uuid4())
+
+    job_role_key = f"job_role_{st.session_state['unique_key']}"
+    resume_key = f"resume_uploader_{st.session_state['unique_key']}"
+
+    job_role = st.selectbox("Role:", ["Frontend", "Backend", "Full Stack","React Developer","Nodejs Develoer", "ML Engineer", "Software Engineer"], key=job_role_key)
+    resume_file = st.file_uploader("Upload Resume (PDF)", type=['pdf'], key=resume_key)
+
 
     resume_text = ""
     if resume_file:

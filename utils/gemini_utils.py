@@ -207,7 +207,7 @@ def get_interview_feedback(questions, answers, coding_questions, code_responses,
 
         except google.api_core.exceptions.ResourceExhausted:
             st.toast("⚠️ Gemini API quota exceeded. Retrying in 35 seconds...", icon="⏳")
-            #time.sleep(35)
+            time.sleep(35)
 
         except Exception as e:
             st.toast(f"❌ Error while generating feedback: {e}", icon="🚫")
@@ -344,11 +344,11 @@ def get_interview_feedback1(questions, answers, coding_questions, code_responses
 
         except google.api_core.exceptions.ResourceExhausted:
             st.toast("⚠️ Gemini API quota exceeded. Retrying in 35 seconds...", icon="⏳")
-            #time.sleep(35)  # Wait before retry
+            time.sleep(35)  # Wait before retry
 
         except Exception as e:
             st.toast(f"❌ Error while generating feedback: {e}", icon="🚫")
-            #break
+            break
 
     # If it fails after retries
     #return {

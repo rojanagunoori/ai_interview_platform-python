@@ -334,7 +334,7 @@ def display_feedback():
     if st.button("🔁 Start Again", key=st.session_state["restart_start_button_key"]):
         clear_session()
         show_css_loader("Restarting... Please wait")
-        #time.sleep(1)
+        time.sleep(1)
         
          # Clear session state
         

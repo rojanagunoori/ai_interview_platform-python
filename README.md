@@ -35,22 +35,24 @@ An AI-powered voice-based interview simulator that personalizes questions based 
 
 ---
 
-## 🛠️ Tech Stack & Tools
+## 🛠️ Tech Stack & Tools, Libraries & Frameworks
 
 | Category              | Technologies / Libraries / Tools             |
 |-----------------------|----------------------------------------------|
 | Programming           | Python                                       |
 | Web Framework         | Streamlit                                    |
 | Resume Parsing        | `PyPDF2`, `tempfile`                         |
+| Data Handling          | NumPy, Pandas      |
 | Text-to-Speech (TTS)  | `pyttsx3` or `gTTS`                          |
 | Speech Recognition    | `speech_recognition`, Google Speech API      |
 | AI/ML (Planned)       | Gemini API                                   |
 | Unique IDs & Temp     | `uuid`, `tempfile`                           |
 | UX Enhancements       | Streamlit HTML, Spinners                     |
 | Version Control       | Git, GitHub                                  |
-| IDE                   | Visual Studio Code                           |
+| IDE                   | Visual Studio Code, Git, GitHub  Code                           |
 | Deployment            | Render.com                                   |
 | Voice Skills          | Text-to-Speech (TTS), Speech-to-Text (STT)   |
+| UX/UI                  | HTML tags, Streamlit spinners                          |
 | Coding Platform       | (Planned) Code editor + test runner          |
 
 ---
@@ -76,9 +78,7 @@ source venv/bin/activate  # or venv\Scripts\activate on Windows
 # Install required packages
 pip install -r requirements.txt
 ▶️ Run the App
-bash
-Copy
-Edit
+
 streamlit run main.py
 Then open your browser and go to: http://localhost:8501
 
@@ -86,6 +86,16 @@ Then open your browser and go to: http://localhost:8501
 🌐 Live App: https://ai-interview-platform-python.onrender.com/
 
 📁 GitHub Repository: https://github.com/rojanagunoori/ai_interview_platform-python
+
+
+🧠 Challenges Faced
+✨ Parsing resumes with inconsistent formatting using PyPDF2, pandas, numpy.
+
+✨ Handling silent or noisy input from microphones in speech_recognition.
+
+✨ Managing performance and rendering delays in deployed environments like Render.
+
+✨ Designing dynamic voice flow for realistic AI interaction.
 
 🧠 Future Enhancements
 ✨ Real-time answer evaluation using AI
@@ -95,6 +105,14 @@ Then open your browser and go to: http://localhost:8501
 📊 Analytics dashboard
 
 🎯 Support for more roles and languages
+
+ 🧪 Gemini-powered contextual AI evaluation.
+
+🧪 Fully functional live coding IDE in the browser.
+
+🧪 Automated feedback based on user answers.
+
+🧪 Candidate performance scoring and downloadable reports.
 
 🙋‍♀️ Author
 Nagunoori Roja

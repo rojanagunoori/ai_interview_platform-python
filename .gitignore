@@ -1,0 +1,62 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+.env.*
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# VS Code config
+.vscode/
+
+# macOS & system files
+.DS_Store
+Thumbs.db
+
+# Python virtual environment
+venv/
+env/
+.venv/
+ENV/
+
+# Pip dependency files backup
+pip-log.txt
+
+# Streamlit cache
+.streamlit/
+
+# Logs
+*.log
+
+# PyInstaller
+dist/
+build/
+*.spec
+
+# Render deployment config (optional if you don't want to expose secrets)
+render.yaml
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pytest
+.cache
+
+# Coverage reports
+htmlcov/
+.coverage
+.tox/
+
+# Local data
+*.sqlite3
+*.db
+
+# Gemini/Google API credentials
+credentials.json
+token.json

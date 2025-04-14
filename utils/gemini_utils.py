@@ -100,7 +100,7 @@ ONLY return valid JSON. Do not include markdown formatting like triple backticks
         return behavioral_questions
 
 def get_coding_problems(role: str, resumetext: str, num_problems: int = 2):
-    prompt = f"""Generate {num_problems} Python coding interview questions for a {role} based on this resume:
+    prompt1 = f"""Generate {num_problems} Python coding interview questions for a {role} based on this resume:
 {resumetext}
 
 Respond ONLY in JSON format like:
@@ -108,6 +108,31 @@ Respond ONLY in JSON format like:
   {{
     "question": "Write a function to reverse a string.",
     "difficulty": "Easy"
+  }}
+]
+"""
+    prompt = f"""You are an expert interviewer generating technical coding questions.
+
+Generate {num_problems} coding interview questions for the role of "{role}", 
+ONLY in one of the following programming languages: Python, Java, or JavaScript.
+
+Base the questions on this resume:
+{resumetext}
+
+Make sure the questions test programming knowledge (e.g., algorithms, data structures, problem-solving) 
+and not general frontend or backend concepts. Avoid non-coding questions.
+
+Respond ONLY in JSON format like:
+[
+  {{
+    "question": "Write a Python function to reverse a string.",
+    "difficulty": "Easy",
+    "language": "Python"
+  }},
+  {{
+    "question": "Write a JavaScript function to check if a string is a palindrome.",
+    "difficulty": "Medium",
+    "language": "JavaScript"
   }}
 ]
 """

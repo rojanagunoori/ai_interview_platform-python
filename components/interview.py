@@ -224,7 +224,8 @@ def run_interview(role, resumetext):
             # Dynamically create a unique key for each selectbox based on the question index
             language = st.selectbox(
                 "Select Language", 
-                ["python", "javascript", "java", "c", "cpp"], 
+                ["python", "javascript", "java"#, "c", "cpp"
+                 ], 
                 index=0,
                 key=f"language_{st.session_state.current_code_index}"  # Unique key
             )
